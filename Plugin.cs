@@ -17,7 +17,7 @@ namespace Inf_Reroll
         {
             // Plugin startup logic
             Log = base.Log;
-            Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
+            Log.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} V1.0.3 is loaded!");
             var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
             harmony.PatchAll();
         }
@@ -28,10 +28,14 @@ namespace Inf_Reroll
         internal static class LevelUpUIPatches
         {
             private static int? savedRerollCount = null;
-            private static GameObject original;
-            private static GameObject NewRerollButtonGobject;
-            private static TextMeshProUGUI NewRerollButtonText;
-            private static CoolButton NewRerollButton;
+            private static GameObject originalPassive;
+            private static GameObject NewRerollPassiveButtonGobject;
+            private static TextMeshProUGUI NewRerollPassiveButtonText;
+            private static CoolButton NewRerollPassiveButton;
+            private static GameObject originalBall;
+            private static GameObject NewRerollBallButtonGobject;
+            private static TextMeshProUGUI NewRerollBallButtonText;
+            private static CoolButton NewRerollBallButton;
 
             [HarmonyPrefix]
             [HarmonyPatch(nameof(LevelUpUI.OnRerollClicked))]
@@ -58,22 +62,59 @@ namespace Inf_Reroll
             [HarmonyPatch(nameof(LevelUpUI.Activate))]
             private static void ActivatePostfix(LevelUpUI __instance, LevelUpType t)
             {
-
-                if (t != LevelUpType.kBonusPassive)
+                Plugin.Log.LogInfo($"Level up UI actiaveted with: {t}");
+                if (t == LevelUpType.kBonusPassive)
                 {
-                    if (NewRerollButton != null)
-                        NewRerollButtonGobject.SetActive(false);
-                    return;
+                    if (NewRerollPassiveButton == null)
+                    {
+                        Plugin.Log.LogInfo("Creating passive reroll button");
+                        originalPassive = __instance.BtnTreasureContinue.gameObject;
+                        NewRerollPassiveButtonGobject = UnityEngine.Object.Instantiate(originalPassive, originalPassive.transform.parent);
+                        NewRerollPassiveButtonText = NewRerollPassiveButtonGobject.GetComponentInChildren<TextMeshProUGUI>();
+                        NewRerollPassiveButton = NewRerollPassiveButtonGobject.GetComponent<CoolButton>();
+                        NewRerollPassiveButtonGobject.transform.position += new Vector3(-1.8f, 0, 0);
+                        NewRerollPassiveButtonText.SetText("Reroll");
+                        NewRerollPassiveButton.OnClicked = __instance.BtnReroll.OnClicked;
+                    }
+                    else
+                    {
+                        Plugin.Log.LogInfo("Activating passive reroll button");
+                        NewRerollPassiveButtonGobject.SetActive(true);
+                    }
+
                 }
-                if (NewRerollButton != null)
-                    return;
-                original = __instance.BtnTreasureContinue.gameObject;
-                NewRerollButtonGobject = UnityEngine.Object.Instantiate(original, original.transform.parent);
-                NewRerollButtonText = NewRerollButtonGobject.GetComponentInChildren<TextMeshProUGUI>();
-                NewRerollButton = NewRerollButtonGobject.GetComponent<CoolButton>();
-                NewRerollButtonGobject.transform.position += new Vector3(-1.8f, 0 ,0 );
-                NewRerollButtonText.SetText("Reroll");
-                NewRerollButton.OnClicked = __instance.BtnReroll.OnClicked;
+                else if (t == LevelUpType.kBonusBall)
+                {
+                    if (NewRerollBallButton == null)
+                    {
+                        Plugin.Log.LogInfo("Creating ball reroll button");
+                        originalBall = __instance.BtnTreasureContinue.gameObject;
+                        NewRerollBallButtonGobject = UnityEngine.Object.Instantiate(originalBall, originalBall.transform.parent);
+                        NewRerollBallButtonText = NewRerollBallButtonGobject.GetComponentInChildren<TextMeshProUGUI>();
+                        NewRerollBallButton = NewRerollBallButtonGobject.GetComponent<CoolButton>();
+                        NewRerollBallButtonGobject.transform.position += new Vector3(-1.8f, 0, 0);
+                        NewRerollBallButtonText.SetText("Reroll");
+                        NewRerollBallButton.OnClicked = __instance.BtnReroll.OnClicked;
+                    }
+                    else
+                    {
+                        Plugin.Log.LogInfo("Activating ball reroll button");
+                        NewRerollBallButtonGobject.SetActive(true);
+                    }
+                }
+                else
+                {
+                    if (t != LevelUpType.kBonusPassive && NewRerollPassiveButton != null && NewRerollPassiveButtonGobject.activeInHierarchy)
+                    {
+                        Plugin.Log.LogInfo("Dissabling passive reroll button");
+                        NewRerollPassiveButtonGobject.SetActive(false);
+                    }
+                    if (t != LevelUpType.kBonusBall && NewRerollBallButton != null && NewRerollBallButtonGobject.activeInHierarchy)
+                    {
+                        Plugin.Log.LogInfo("Dissabling ball reroll button");
+                        NewRerollBallButtonGobject.SetActive(false);
+                    } 
+                }
             }
         }
 
